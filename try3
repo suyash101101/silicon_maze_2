@@ -1,0 +1,58 @@
+import requests
+from bs4 import BeautifulSoup
+import csv
+
+companies = ['VOLTAS', 'BLUESTARCO', 'CROMPTON', 'ORIENTELEC', 'HAVELLS', 'SYMPHONY', 'WHIRLPOOL']
+
+def generate_url(company):
+    return f"https://www.screener.in/company/{company}/consolidated/"
+
+def get_and_parse(url):
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    return soup
+
+def extract_data(soup):
+    data = []
+    profit_loss = soup.find('section', {'id': 'profit-loss'})
+    ratios = soup.find('section', {'id': 'ratios'})
+    
+    if profit_loss and ratios:
+        years = ['March 2024', 'March 2023', 'March 2022']
+        for year in years:
+            year_data = {'Year': year}
+            pl_rows = profit_loss.find_all('tr')
+            ratio_rows = ratios.find_all('tr')
+            
+            for row in pl_rows + ratio_rows:
+                cells = row.find_all('td')
+                if len(cells) > 3:
+                    key = cells[0].text.strip()
+                    if key in ['Sales', 'Net Profit', 'OPM', 'EPS']:
+                        year_index = years.index(year)
+                        year_data[key] = cells[-1-year_index].text.strip()
+            
+            data.append(year_data)
+    
+    return data
+
+def write_to_csv(filename, data):
+    with open(filename, 'w', newline='') as file:
+        fieldnames = ['Company', 'Year', 'Sales', 'Net Profit', 'OPM', 'EPS']
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in data:
+            writer.writerow(row)
+
+def scrape_pokemon_stats():
+    all_data = []
+    for company in companies:
+        url = generate_url(company)
+        soup = get_and_parse(url)
+        company_data = extract_data(soup)
+        for data in company_data:
+            data['Company'] = company
+            all_data.append(data)
+    write_to_csv('/Users/suyashnahar/Desktop/Battle_Performance_Stats.csv', all_data)
+
+scrape_pokemon_stats()
