@@ -15,6 +15,7 @@ def get_and_parse(url):
 def extract_performance_data(soup):
     data = {'March 2022': {}, 'March 2023': {}, 'March 2024': {}}
     
+    # Locate the table containing financial data (Screener typically has tables for sales, profit, etc.)
     table = soup.find('table', {'class': 'data-table'})
     
     if table:
