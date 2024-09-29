@@ -46,6 +46,6 @@ def scrape_company_data():
         data['Company'] = company
         all_data.append(data)
         time.sleep(2)
-    write_to_csv('/Users/suyashnahar/Desktop/Company_Balance_Sheet.csv', all_data)
+    write_to_csv('/Users/suyashnahar/Desktop/Pokemon_Item_Inventory.csv', all_data)
 
 scrape_company_data()
