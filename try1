@@ -1,0 +1,47 @@
+import requests
+from bs4 import BeautifulSoup
+import csv
+
+companies = ['VOLTAS', 'BLUE STAR', 'CROMPTON', 'ORIENT ELECTRIC', 'HAVELLS', 'SYMPHONY', 'WHIRLPOOL']
+
+def generate_url(company):
+    return f"https://www.screener.in/company/{company}/consolidated/"
+
+def get_and_parse(url):
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    return soup
+
+def extract_data(soup):
+    data = {}
+    balance_sheet_section = soup.find_all('div', {'class': 'actual-class-name'})
+    if balance_sheet_section:
+        fields = ['Reserves', 'Borrowings', 'Total Liabilities', 'Fixed Assets', 'Investments', 'Total Assets']
+        for field in fields:
+            field_element = balance_sheet_section[0].find('span', text=field)
+            if field_element:
+                data[field] = field_element.find_next('span').text.strip()
+
+    return data
+
+def write_to_csv(filename, data):
+    with open(filename, 'w', newline='') as file:
+        fieldnames = ['Company', 'Reserves', 'Borrowings', 'Total Liabilities', 'Fixed Assets', 'Investments', 'Total Assets']
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in data:
+            writer.writerow(row)
+
+def scrape_pokemon_stats():
+    all_data = []
+
+    for company in companies:
+        url = generate_url(company)
+        soup = get_and_parse(url)
+        data = extract_data(soup)
+        data['Company'] = company
+        all_data.append(data)
+
+    write_to_csv('/Users/suyashnahar/Desktop/Basic_Pokemon_Stats.csv', all_data)
+
+scrape_pokemon_stats()
