@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import csv
 
-companies = ['VOLTAS', 'BLUESTARCO', 'CROMPTON', 'ORIENTELEC', 'HAVELLS', 'SYMPHONY', 'WHIRLPOOL']
+companies = ['VOLTAS', 'BLUE STAR', 'CROMPTON', 'ORIENT ELECTRIC', 'HAVELLS', 'SYMPHONY', 'WHIRLPOOL']
 
 def generate_url(company):
     return f"https://www.screener.in/company/{company}/consolidated/"
@@ -12,28 +12,34 @@ def get_and_parse(url):
     soup = BeautifulSoup(response.text, 'html.parser')
     return soup
 
-def extract_data(soup):
-    data = []
-    profit_loss = soup.find('section', {'id': 'profit-loss'})
-    ratios = soup.find('section', {'id': 'ratios'})
+def extract_performance_data(soup):
+    data = {'March 2022': {}, 'March 2023': {}, 'March 2024': {}}
     
-    if profit_loss and ratios:
-        years = ['March 2024', 'March 2023', 'March 2022']
-        for year in years:
-            year_data = {'Year': year}
-            pl_rows = profit_loss.find_all('tr')
-            ratio_rows = ratios.find_all('tr')
-            
-            for row in pl_rows + ratio_rows:
-                cells = row.find_all('td')
-                if len(cells) > 3:
-                    key = cells[0].text.strip()
-                    if key in ['Sales', 'Net Profit', 'OPM', 'EPS']:
-                        year_index = years.index(year)
-                        year_data[key] = cells[-1-year_index].text.strip()
-            
-            data.append(year_data)
+    table = soup.find('table', {'class': 'data-table'})
     
+    if table:
+        rows = table.find_all('tr')
+        
+        for row in rows:
+            cells = row.find_all('td')
+            if len(cells) > 4:
+                label = cells[0].text.strip()
+                if label == "Sales":
+                    data['March 2022']['Sales'] = cells[1].text.strip()
+                    data['March 2023']['Sales'] = cells[2].text.strip()
+                    data['March 2024']['Sales'] = cells[3].text.strip()
+                elif label == "Net Profit":
+                    data['March 2022']['Net Profit'] = cells[1].text.strip()
+                    data['March 2023']['Net Profit'] = cells[2].text.strip()
+                    data['March 2024']['Net Profit'] = cells[3].text.strip()
+                elif label == "OPM":
+                    data['March 2022']['OPM'] = cells[1].text.strip()
+                    data['March 2023']['OPM'] = cells[2].text.strip()
+                    data['March 2024']['OPM'] = cells[3].text.strip()
+                elif label == "EPS":
+                    data['March 2022']['EPS'] = cells[1].text.strip()
+                    data['March 2023']['EPS'] = cells[2].text.strip()
+                    data['March 2024']['EPS'] = cells[3].text.strip()
     return data
 
 def write_to_csv(filename, data):
@@ -41,18 +47,27 @@ def write_to_csv(filename, data):
         fieldnames = ['Company', 'Year', 'Sales', 'Net Profit', 'OPM', 'EPS']
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
-        for row in data:
-            writer.writerow(row)
+        for company, stats in data.items():
+            for year, values in stats.items():
+                row = {
+                    'Company': company,
+                    'Year': year,
+                    'Sales': values.get('Sales', 'N/A'),
+                    'Net Profit': values.get('Net Profit', 'N/A'),
+                    'OPM': values.get('OPM', 'N/A'),
+                    'EPS': values.get('EPS', 'N/A')
+                }
+                writer.writerow(row)
 
-def scrape_pokemon_stats():
-    all_data = []
+def scrape_battle_performance():
+    all_data = {}
+    
     for company in companies:
         url = generate_url(company)
         soup = get_and_parse(url)
-        company_data = extract_data(soup)
-        for data in company_data:
-            data['Company'] = company
-            all_data.append(data)
-    write_to_csv('/Users/suyashnahar/Desktop/Battle_Performance_Stats.csv', all_data)
+        performance_data = extract_performance_data(soup)
+        all_data[company] = performance_data
 
-scrape_pokemon_stats()
+    write_to_csv('/Users/suyashnahar/Desktop/Pokemon_Battle_Performance.csv', all_data)
+
+scrape_battle_performance()
