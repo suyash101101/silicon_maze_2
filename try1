@@ -14,19 +14,19 @@ def get_and_parse(url):
 
 def extract_data(soup):
     data = {}
-    balance_sheet_section = soup.find_all('div', {'class': 'actual-class-name'})
-    if balance_sheet_section:
-        fields = ['Reserves', 'Borrowings', 'Total Liabilities', 'Fixed Assets', 'Investments', 'Total Assets']
-        for field in fields:
-            field_element = balance_sheet_section[0].find('span', text=field)
-            if field_element:
-                data[field] = field_element.find_next('span').text.strip()
+    stats_section = soup.find_all('div', {'class': 'flex flw-wrp it'})
 
+    if stats_section and len(stats_section) > 4:
+        data['Market Cap'] = stats_section[0].find('span').text.strip()
+        data['Stock P/E'] = stats_section[1].find('span').text.strip()
+        data['ROCE'] = stats_section[2].find('span').text.strip()
+        data['Current Price'] = stats_section[3].find('span').text.strip()
+        data['ROE'] = stats_section[4].find('span').text.strip()
     return data
 
 def write_to_csv(filename, data):
     with open(filename, 'w', newline='') as file:
-        fieldnames = ['Company', 'Reserves', 'Borrowings', 'Total Liabilities', 'Fixed Assets', 'Investments', 'Total Assets']
+        fieldnames = ['Company', 'Market Cap', 'Stock P/E', 'ROCE', 'Current Price', 'ROE']
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
         for row in data:
